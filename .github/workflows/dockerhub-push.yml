@@ -1,38 +1,50 @@
+# Name shown in GitHub Actions UI
 name: Manual Docker Build & Scan
 
+# Trigger manually from GitHub UI
 on:
-  workflow_dispatch:  # Allows manual trigger from GitHub UI
+  workflow_dispatch:
+
+# ⛓️ Set minimum permissions (best practice)
+permissions:
+  contents: read       # Needed to clone repo
+  packages: write      # Needed if you want to push to GitHub Packages (optional)
+  # Avoid 'write-all' for security
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
+  docker-build-and-push:
+    name: Build, Scan, and Push Docker Image
+    runs-on: ubuntu-latest  # Use latest Ubuntu runner
 
     steps:
+      # ✅ Step 1: Clone your repo into the runner
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Run Checkov scan
+      # ✅ Step 2: Run Checkov to scan Dockerfile, workflows, IaC, etc.
+      - name: Checkov Scan
         uses: bridgecrewio/checkov-action@v12.2545.0
         with:
-          directory: .
-          quiet: true
+          directory: .       # Scan whole repo
+          quiet: true        # Reduce noise in logs
+          output_format: sarif # Format for GitHub Code Scanning results
 
-      # Optional: Uncomment to use Snyk instead of Checkov
-      # - name: Run Snyk scan
-      #   uses: snyk/actions/docker@master
-      #   env:
-      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      #   with:
-      #     image: myapp:latest
-      #     dockerfile: Dockerfile
-
+      # ✅ Step 3: Log in to Docker Hub using secrets
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
+      # ✅ Step 4: Build Docker image and tag it
       - name: Build Docker image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/myapp:latest .
 
+      # ✅ Step 5: Push image to Docker Hub
       - name: Push Docker image
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/myapp:latest
+
+      # ✅ Step 6 (Optional): Upload Checkov results to GitHub Security tab
+      - name: Upload SARIF report
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: results.sarif
