@@ -50,3 +50,12 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
+
+       # ✅ Step 6 (Optional): Upload artifact      
+      - name: Upload SARIF as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkov-results
+          path: results.sarif
+
+      
