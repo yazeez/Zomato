@@ -1,10 +1,10 @@
-# Use Node.js 16 slim as the base image
+# Use a minimal Node.js base image for smaller attack surface
 FROM node:16-slim
 
-# Set the working directory
+# Set working directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json to the working directory
+# Copy only dependency files first to leverage Docker cache
 COPY package*.json ./
 
 # Install dependencies
@@ -16,8 +16,16 @@ COPY . .
 # Build the React app
 RUN npm run build
 
-# Expose port 3000 (or the port your app is configured to listen on)
+# Create a non-root user to run the app securely
+RUN adduser --disabled-password appuser
+USER appuser
+
+# Add a health check to let Docker know if your app is alive
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s \
+  CMD curl --fail http://localhost:3000/health || exit 1
+
+# Expose the port your app uses
 EXPOSE 3000
 
-# Start your Node.js server (assuming it serves the React app)  
+# Start the Node.js app
 CMD ["npm", "start"]
