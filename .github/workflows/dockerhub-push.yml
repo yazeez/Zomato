@@ -1,17 +1,30 @@
-name: Build and Push to Docker Hub
+name: Manual Docker Build & Scan
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
 
 jobs:
-  docker:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Run Checkov scan
+        uses: bridgecrewio/checkov-action@v12.2545.0
+        with:
+          directory: .
+          quiet: true
+
+      # Optional: Uncomment to use Snyk instead of Checkov
+      # - name: Run Snyk scan
+      #   uses: snyk/actions/docker@master
+      #   env:
+      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      #   with:
+      #     image: myapp:latest
+      #     dockerfile: Dockerfile
 
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
