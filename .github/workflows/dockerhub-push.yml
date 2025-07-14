@@ -9,6 +9,8 @@ on:
 permissions:
   contents: read       # Needed to clone repo
   packages: write      # Needed if you want to push to GitHub Packages (optional)
+  security-events: write  # ✅ Required for uploading SARIF to GitHub
+
   # Avoid 'write-all' for security
 
 jobs:
@@ -45,6 +47,6 @@ jobs:
 
       # ✅ Step 6 (Optional): Upload Checkov results to GitHub Security tab
       - name: Upload SARIF report
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
